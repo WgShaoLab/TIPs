@@ -2,7 +2,7 @@ import os
 import glob
 from typing import List, Optional
 from Bio import SeqIO
-
+import os, glob
 from .utils import run_cmd, timing
 from .fasta_utils import FastaFile
 from .ms_postprocess import (
@@ -121,10 +121,35 @@ class DBSearchPipeline:
 
         # 3) 按 ID 从 TE 大库中抽取条目
         out_te_fa = os.path.join(self.sample_path, "Denovo", "TE_candidates_from_DB.fasta")
-        with open(out_te_fa, "w") as oh:
-            for rec in SeqIO.parse(te_db, "fasta"):
-                if rec.id in te_ids:
-                    oh.write(f">{rec.id}\n{str(rec.seq)}\n")
+
+        # 根据路径判断是 FASTA 还是 BLAST 数据库
+        def _is_blast_db(base: str) -> bool:
+            # 兼容分卷索引，如 .00.pin/.01.pin... 或存在 .pal/.pin
+            if os.path.exists(base + ".pal") or os.path.exists(base + ".pin"):
+                return True
+            if glob.glob(base + ".[0-9][0-9].pin"):
+                return True
+            return False
+
+        out_te_fa = os.path.join(self.sample_path, "Denovo", "TE_candidates_from_DB.fasta")
+        if _is_blast_db(te_db):
+            # 用 blastdbcmd 从 BLAST 库按 ID 批量导出为 FASTA
+            ids_txt = os.path.join(work_dir, "te_ids.txt")
+            with open(ids_txt, "w") as fh:
+                fh.write("\n".join(te_ids) + "\n")
+
+            blastdbcmd_bin = blast_cfg.get("blastdbcmd_bin", "blastdbcmd")
+            cmd = (
+                f'"{blastdbcmd_bin}" -db "{te_db}" -dbtype prot '
+                f'-entry_batch "{ids_txt}" -out "{out_te_fa}" -outfmt %f'
+            )
+            run_cmd(cmd, env=os.environ)
+        else:
+            # 仍然支持直接给 FASTA 的场景
+            with open(out_te_fa, "w") as oh:
+                for rec in SeqIO.parse(te_db, "fasta"):
+                    if rec.id in te_ids:
+                        oh.write(f">{rec.id}\n{str(rec.seq)}\n")
 
         print(f"[TE] 抽取到 {len(te_ids)} 条 TE 条目 → {out_te_fa}")
         return out_te_fa

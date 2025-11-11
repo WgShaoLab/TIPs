@@ -71,6 +71,7 @@ database_build:
 # === 新增：TE 子库选择用的 blastp-short 可执行文件（与 postprocessing 分开）===
 blast:
   blastp_bin: "/opt/blastp/blastp"
+  blastdbcmd_bin: /path/to/blastdbcmd
 
 search_engines:
   comet:
