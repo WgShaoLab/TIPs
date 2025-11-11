@@ -1,5 +1,6 @@
 # tips-pipeline config (with TE search via blastp-short)
 
+
 sample:
   # Path to the working directory for ONE biological sample.
   # Assumed subdirs:
