@@ -9,6 +9,7 @@ from .utils import run_cmd, timing
 from .sequence_filters import extract_confident_subsequences
 
 
+
 class DeNovoEngine:
     """
     Base class for de novo sequencing engines.

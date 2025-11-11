@@ -137,8 +137,8 @@ def stage_postprocess(cfg):
     ])
     if len(pepxml_list) == 0:
         raise RuntimeError(
-            "未找到 pepXML 文件。请检查搜索引擎是否产生 pepXML；"
-            "若仅有 MSGF+ 的 .mzid，请先转换为 pepXML 再重试。"
+            "[[EN REQUIRED]] pepXML . pepXML;"
+            "[[EN REQUIRED]] MSGF+ [[EN REQUIRED]] .mzid, pepXML ."
         )
 
     # Output locations
@@ -167,7 +167,7 @@ def stage_postprocess(cfg):
         # Fallback: locate the generated pepXML if the filename differs (e.g., *.interact.pep.xml)
         maybe = _find_files([os.path.join(iprophet_dir, "*.pep.xml")])
         if not maybe:
-            raise RuntimeError("xinteract 未产生合并的 pepXML，无法继续。")
+            raise RuntimeError("xinteract did not produce a merged pepXML; cannot continue.")
         iprophet_pepxml = maybe[0]
         run_cmd(f'"{refreshparser}" "{iprophet_pepxml}"', env=os.environ)
 
@@ -216,17 +216,18 @@ def stage_postprocess(cfg):
     else:
         final_csv = te_only_csv
 
-    print("\n[stage_postprocess] 完成：")
+    print("\n[stage_postprocess] Done:")
     print(f"  iProphet pepXML : {iprophet_pepxml}")
-    print(f"  iProphet 表格   : {iprophet_csv}")
-    print(f"  FDR 过滤结果    : {fdr_csv}")
+    print(f"  iProphet table   : {iprophet_csv}")
+    print(f"  FDR-filtered    : {fdr_csv}")
     if te_only_csv != fdr_csv:
-        print(f"  去同源后结果    : {te_only_csv}")
+        print(f"  After homology removal    : {te_only_csv}")
     if final_csv != te_only_csv:
-        print(f"  结合预测结果    : {final_csv}")
+        print(f"  Binding prediction results    : {final_csv}")
 
 
 # ----------------------------- CLI --------------------------------
+
 
 def main():
     parser = argparse.ArgumentParser(description="TIPs pipeline CLI")

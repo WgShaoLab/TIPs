@@ -5,7 +5,6 @@ import pandas as pd
 from typing import List
 from Bio import SeqIO
 from .utils import run_cmd
-import subprocess
 
 
 class FastaFile:

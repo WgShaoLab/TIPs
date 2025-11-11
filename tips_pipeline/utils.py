@@ -5,6 +5,7 @@ import subprocess
 import functools
 from typing import Callable
 
+
 def run_cmd(cmd: str, env=None, shell: bool = True) -> None:
     """
     Run a shell command and raise if it fails.

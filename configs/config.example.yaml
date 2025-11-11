@@ -50,25 +50,26 @@ database_build:
   contaminants_fasta: "/ref/fasta/Contaminants_tag_0.fasta"
 
   # TE-derived peptide FASTA produced by de novo stage (header=seq)
-  # 默认由 stage_denovo 自动写到 {sample_path}/Denovo/Denovo_TE_SoftMerged_InstaNovo.fasta
+  # [[EN REQUIRED]] stage_denovo [[EN REQUIRED]] {sample_path}/Denovo/Denovo_TE_SoftMerged_InstaNovo.fasta
   denovo_te_tagged_fasta: "AUTO"
 
-  # === 新增：用于“tag→TE 大库(blast)”的 TE 数据库与选择策略 ===
-  # 大而全的 TE 蛋白/翻译库（单行 FASTA；header 的 id 必须能与 blast saccver 对上）
+  # === [[EN REQUIRED]]:[[EN REQUIRED]]“tag→TE [[EN REQUIRED]](blast)”[[EN REQUIRED]] TE [[EN REQUIRED]] ===
+  # [[EN REQUIRED]] TE [[EN REQUIRED]]/( FASTA;header [[EN REQUIRED]] id [[EN REQUIRED]] blast saccver )
   te_db_fasta: "/ref/fasta/hg38_rmsk_6_frame_singleLine_done.fasta"
 
-  # 选择策略：若 method=blast，则在构库前先把 de novo tag 用 blastp-short 去搜 TE 大库，
-  # 抽取命中的 TE 条目形成“样本级 TE 子库”；否则直接使用 de novo 合并 FASTA 作为 TE 候选。
+
+  # [[EN REQUIRED]]:[[EN REQUIRED]] method=blast, de novo tag [[EN REQUIRED]] blastp-short [[EN REQUIRED]] TE ,
+  # [[EN REQUIRED]] TE [[EN REQUIRED]]“[[EN REQUIRED]] TE [[EN REQUIRED]]”; de novo [[EN REQUIRED]] FASTA [[EN REQUIRED]] TE .
   te_selection:
     method: "blast"         # "blast" | "direct"
-    chunks: 15              # 查询 FASTA 的并行拆分份数
-    threads_per_chunk: 4    # 每份子任务的线程
+    chunks: 15              # [[EN REQUIRED]] FASTA [[EN REQUIRED]]
+    threads_per_chunk: 4    # [[EN REQUIRED]]
 
   # Where to write combined search DB (w/decoys)
   # Path will end up like: {sample_path}/DB_search_iProphet/<ENGINE>/<ENGINE>_DBsearch.fasta
   add_decoy: true  # reverse-sequence decoy
 
-# === 新增：TE 子库选择用的 blastp-short 可执行文件（与 postprocessing 分开）===
+# === [[EN REQUIRED]]:TE [[EN REQUIRED]] blastp-short ( postprocessing )===
 blast:
   blastp_bin: "/opt/blastp/blastp"
   blastdbcmd_bin: /path/to/blastdbcmd
@@ -105,7 +106,7 @@ postprocessing:
   philosopher:
     binary: "/opt/philosopher/philosopher"
 
-  # 保留原先“去同源用的 blastp”配置（与 TE 选择用的 blastp 可不同）
+  # [[EN REQUIRED]]“[[EN REQUIRED]] blastp”( TE [[EN REQUIRED]] blastp )
   blastp:
     enable: true
     binary: "/opt/blastp/blastp"   # blastp-short-capable binary

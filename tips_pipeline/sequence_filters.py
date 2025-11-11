@@ -1,6 +1,7 @@
 from typing import List
 
 
+
 def extract_confident_subsequences(
     sequence: str,
     aa_scores: List[float],
