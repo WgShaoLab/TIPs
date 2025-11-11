@@ -1,19 +1,20 @@
+# utils.py
 import os
 import time
 import subprocess
 import functools
 from typing import Callable
 
-
-def run_cmd(cmd: str, env, shell: bool = True) -> None:
+def run_cmd(cmd: str, env=None, shell: bool = True) -> None:
     """
     Run a shell command and raise if it fails.
     """
+    if env is None:
+        env = os.environ
     print(f"[CMD] {cmd}")
     result = subprocess.run(cmd, shell=shell, env=env)
     if result.returncode != 0:
         raise RuntimeError(f"Command failed with code {result.returncode}: {cmd}")
-
 
 def wait_while_running(pattern: str, poll_interval: int = 5) -> None:
     """
