@@ -72,7 +72,7 @@ database_build:
 # === [[EN REQUIRED]]:TE [[EN REQUIRED]] blastp-short ( postprocessing )===
 blast:
   blastp_bin: "/opt/blastp/blastp"
-  blastdbcmd_bin: /path/to/blastdbcmd
+  blastdbcmd_bin: "/path/to/blastdbcmd"
 
 search_engines:
   comet:

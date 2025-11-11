@@ -26,7 +26,7 @@ def filter_by_fdr(
     Decoys are prefixed with "rev_".
     """
     if out_path is None:
-        out_path = peptide_csv.replace(".pep.csv", "_fdr.csv")
+        out_path = re.sub(r"\.(tsv|csv)$", "_fdr.tsv", peptide_csv)
 
     df_merged = pd.DataFrame()
     try:
