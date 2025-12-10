@@ -1,4 +1,4 @@
-# TIPs-Style TE-Derived Peptide Discovery Pipeline (TIPsSearch)
+# TIPs
 
 A configurable Python orchestrator for immunopeptidomics focused on discovering **transposable element (TE)-derived antigens**, inspired by TIPs. It wires together de novo tag extraction, sample-specific database construction, multi-engine database search, and integrative post-processing.
 
