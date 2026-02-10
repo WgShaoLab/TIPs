@@ -1,2 +1,0 @@
-[console_scripts]
-tips = tips_cli.cli:app
