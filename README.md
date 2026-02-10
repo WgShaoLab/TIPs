@@ -1,5 +1,13 @@
    # TIPs
 
+![TIPs overview](docs/figures/tips_overview.png)
+
+<!-- badges 行 -->
+![Docker](https://img.shields.io/badge/Docker-required-blue)
+![Platform](https://img.shields.io/badge/platform-linux-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-beta-orange)
+
 TIPs CLI is a command-line wrapper around the TIPs workflow. It standardizes the workflow into a reproducible and portable CLI and unifies all dependencies via Docker. You only need to prepare the **raw data** and download the provided Docker images and resources to run the full pipeline step-by-step or with a single command.
 
 We also provide a **beta Nextflow workflow** that can be executed using the same Docker images and resources.
