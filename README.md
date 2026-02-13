@@ -83,7 +83,7 @@ TIPs CLI orchestrates the workflow; all core tools run inside Docker containers.
 ### Load Images
 
 ```bash
-zstd -dc tips_all_cu121_0.2.tar | docker load
+zstd -dc tips_all_cu121_0.2.tar.zst | docker load
 ```
 
 Verify:
