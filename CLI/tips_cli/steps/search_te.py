@@ -781,20 +781,24 @@ def search_te_step(
 
             comet_param_path = (res_params_dir / Path(comet_params).name).resolve()
 
+            link_paths = []
             for mzml in mzmls:
-                inner = ["/opt/tpp/bin/comet", f"-P{comet_param_path}", f"-D{combined_target_decoy}", str(mzml)]
-                cmd_line = engine_runner.cmd_to_shell(engine_runner.build_run_cmd(inner))
-                _write_cmd(outputs.commands_sh, cmd_line)
+                link_path = raw_dir / mzml.name
+                if not link_path.exists() and not link_path.is_symlink():
+                    os.symlink(mzml, link_path)
+                link_paths.append(str(link_path))
 
-                if dry_run:
-                    continue
+            inner = ["/opt/tpp/bin/comet", f"-P{comet_param_path}", f"-D{combined_target_decoy}"] + link_paths
+            cmd_line = engine_runner.cmd_to_shell(engine_runner.build_run_cmd(inner))
+            _write_cmd(outputs.commands_sh, cmd_line)
 
+            if not dry_run:
                 rc = engine_runner.run(inner, dry_run=False, log_file=outputs.log_file)
                 if rc != 0:
-                    raise RuntimeError(f"Comet failed for {mzml} (exit {rc})")
+                    raise RuntimeError(f"Comet failed (exit {rc})")
 
-                # Collect outputs from mzML directory into raw_dir (Comet default behavior)
-                _collect_engine_outputs_for_mzml(mzml, raw_dir)
+                _rename_pepxml_to_pepxml_xml(raw_dir)
+            # =================================================
 
 
         elif engine == "msfragger":
