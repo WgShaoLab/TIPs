@@ -327,8 +327,8 @@ def split_one(in_path: str) -> str:
                     search_result.remove(hit)
 
             # Drop spectrum_query if no hits remain
-            if len(search_result) == 0:
-                run_summary.remove(spectrum_query)
+            #if len(search_result) == 0:
+                # run_summary.remove(spectrum_query)
 
     out_path = in_path.replace(".pep.xml", "_TE.pep.xml")
     tree.write(out_path, xml_declaration=True, encoding="UTF-8", pretty_print=True)
@@ -796,39 +796,65 @@ def search_te_step(
                 # Collect outputs from mzML directory into raw_dir (Comet default behavior)
                 _collect_engine_outputs_for_mzml(mzml, raw_dir)
 
+
         elif engine == "msfragger":
+
             fr_params = str(params_cfg.get("msfragger", "") or "").strip()
+
             if not fr_params:
                 raise ValueError("search_params.msfragger is empty in config")
 
             fr_template_path = (res_params_dir / Path(fr_params).name).resolve()
+
             fr_runtime_path = raw_dir / "msfragger.runtime.params"
+
+
             _rewrite_kv_params_file(
+
                 template_path=fr_template_path,
+
                 out_path=fr_runtime_path,
+
                 overrides={
+
                     "database_name": str(combined_target_decoy),
-                    "output_dir": str(raw_dir),
+
                 },
+
             )
 
+            # ================= 核心修改区域 =================
+
+            # 2. 批量建立软链接，并将所有新路径存入列表
+
+            link_paths = []
+
             for mzml in mzmls:
-                inner = ["java", "-Xmx16G", "-jar", "/opt/msfragger/MSFragger-4.1.jar", str(fr_runtime_path), str(mzml)]
-                cmd_line = engine_runner.cmd_to_shell(engine_runner.build_run_cmd(inner))
-                _write_cmd(outputs.commands_sh, cmd_line)
 
-                if dry_run:
-                    continue
+                link_path = raw_dir / mzml.name
 
-                rc = engine_runner.run(inner, dry_run=False, log_file=outputs.log_file)
-                if rc != 0:
-                    raise RuntimeError(f"MSFragger failed for {mzml} (exit {rc})")
+                if not link_path.exists() and not link_path.is_symlink():
+                    os.symlink(mzml, link_path)
 
-                # MSFragger sometimes writes near inputs depending on params; collect safely
-                _collect_engine_outputs_for_mzml(mzml, raw_dir)
+                link_paths.append(str(link_path))
+
+
+            inner = ["java", "-Xmx16G", "-jar", "/opt/msfragger/MSFragger-4.1.jar", str(fr_runtime_path)] + link_paths
+
+            cmd_line = engine_runner.cmd_to_shell(engine_runner.build_run_cmd(inner))
+
+            _write_cmd(outputs.commands_sh, cmd_line)
 
             if not dry_run:
+
+                rc = engine_runner.run(inner, dry_run=False, log_file=outputs.log_file)
+
+                if rc != 0:
+                    raise RuntimeError(f"MSFragger failed (exit {rc})")
+
                 _rename_pepxml_to_pepxml_xml(raw_dir)
+
+            # =================================================
 
 
         elif engine == "msgfplus":
