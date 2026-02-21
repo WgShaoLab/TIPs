@@ -827,10 +827,6 @@ def search_te_step(
 
             )
 
-            # ================= 核心修改区域 =================
-
-            # 2. 批量建立软链接，并将所有新路径存入列表
-
             link_paths = []
 
             for mzml in mzmls:
@@ -843,7 +839,7 @@ def search_te_step(
                 link_paths.append(str(link_path))
 
 
-            inner = ["java", "-Xmx16G", "-jar", "/opt/msfragger/MSFragger-4.1.jar", str(fr_runtime_path)] + link_paths
+            inner = ["java", "-Xmx128G", "-jar", "/opt/msfragger/MSFragger-4.1.jar", str(fr_runtime_path)] + link_paths
 
             cmd_line = engine_runner.cmd_to_shell(engine_runner.build_run_cmd(inner))
 
@@ -886,7 +882,7 @@ def search_te_step(
                 mzid_out = raw_dir / f"{mzml_path.stem}.mzid"
                 pepxml_out = raw_dir / f"{mzml_path.stem}.pepXML"
                 cmd1 = (
-                    f"java -jar /opt/msgf/MSGFPlus.jar "
+                    f"java -Xmx128G -jar /opt/msgf/MSGFPlus.jar "
                     f"-conf {q(str(mg_conf_path))} "
                     f"-d {q(str(combined_target_decoy))} "
                     f"-s {q(str(mzml_path))} "
