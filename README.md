@@ -11,6 +11,7 @@
 TIPs CLI is a command-line wrapper around the TIPs workflow. It standardizes the workflow into a reproducible and portable CLI and unifies all dependencies via Docker. You only need to prepare the **raw data** and download the provided Docker images and resources to run the full pipeline step-by-step or with a single command.
 
 We also provide a **beta Nextflow workflow** that can be executed using the same Docker images and resources.
+This project is released under the MIT License. See the LICENSE file for details.
 
 ---
 
