@@ -41,12 +41,13 @@ workflow TIPS {
     denovo.peptides,
     te_blastdb_ch,
     te_npy_ch,
-    te_class_dic_ch
+    te_class_dic_ch,
+    denovo.peptide_soft_json
   )
 
   // S3: build search DB for engines
   searchdb = S3_BUILD_SEARCH_DB(
-    te_db.tagged_fasta,
+    te_db.te_fasta,
     uniprot_ch,
     contaminants_ch
   )
@@ -61,7 +62,7 @@ workflow TIPS {
   )
 
   // S5: separate TE and Canonical pepxml
-  separated = S5_SEPARATE_TE_CANONICAL(searches.all_pepxml)
+  separated = S5_SEPARATE_TE_CANONICAL(searches.all_pepxml, te_db.te_fasta)
 
   // Branches (from S5)
   te_out = TE_BRANCH(

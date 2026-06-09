@@ -10,17 +10,17 @@ workflow S2_BLASTP_BUILD_TE_DB {
   te_fasta
   te_npy
   te_class_dic
+  peptide_soft_json
 
   main:
   blastp_results = BLASTP_DENOVO_PEPTIDES(peptides, te_fasta)
 
   denovo_database = BUILD_DENOVO_DATABASE(
-    blastp_results.blastp_dir.join(peptides),
+    blastp_results.blastp_dir.join(peptides).join(peptide_soft_json),
     te_npy,
     te_class_dic
   )
 
   emit:
   te_fasta = denovo_database.te_fasta
-  tagged_fasta = denovo_database.tagged_fasta
 }

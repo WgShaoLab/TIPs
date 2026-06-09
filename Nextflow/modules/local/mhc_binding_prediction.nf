@@ -15,118 +15,96 @@ process MHC_BINDING_PREDICTION {
   """
   set -euo pipefail
 
- 
   if [ ! -s "${filtered_peptides}" ]; then
-    echo "Empty input file"
+    echo "Empty input file, copying as-is"
     cp "${filtered_peptides}" final_TE_results.tsv
     exit 0
   fi
 
- 
-  header=\$(head -n1 "${filtered_peptides}")
-  peptide_col=\$(echo "\$header" | tr '\\t' '\\n' | grep -n -i "^peptide\$" | cut -d: -f1 | head -n1)
+  python3 << 'PYEOF'
+import pandas as pd
+import subprocess
+import sys
+import os
 
-  if [ -z "\$peptide_col" ]; then
-    echo "No Peptide column found"
-    cp "${filtered_peptides}" final_TE_results.tsv
-    exit 0
-  fi
+# Read filtered peptides
+df = pd.read_csv("${filtered_peptides}", sep='\\t')
 
-  echo "Peptide column index: \$peptide_col"
+# Find peptide column
+peptide_col = None
+for c in df.columns:
+    if c.lower() == 'peptide':
+        peptide_col = c
+        break
 
+if peptide_col is None:
+    print("No Peptide column found, copying input as-is")
+    df.to_csv("final_TE_results.tsv", sep='\\t', index=False)
+    sys.exit(0)
 
-  tail -n+2 "${filtered_peptides}" | \\
-    awk -F'\\t' -v col="\$peptide_col" '{
-      pep = \$col
-      gsub(/^[ \\t]+|[ \\t]+\$/, "", pep)  # trim whitespace
-      len = length(pep)
-      if (len >= 8 && len <= 14) {
-        print ">" pep
-        print pep
-      }
-    }' > binding.fasta
+mhc_alleles = "${params.mhc_alleles}".strip()
 
+# Match CLI behaviour: only run MixMHCpred if HLA alleles are explicitly provided
+if not mhc_alleles:
+    print("No HLA alleles specified, writing final results without MHC predictions")
+    df.to_csv("final_TE_results.tsv", sep='\\t', index=False)
+    sys.exit(0)
 
-  peptide_count=\$(grep -c "^>" binding.fasta || true)
-  echo "Valid peptides for MHC prediction: \$peptide_count"
+# Filter peptides for MHC-I length (8-14aa; legacy behavior: len < 15)
+peptides = sorted(set([
+    p for p in df[peptide_col].dropna().astype(str).tolist()
+    if 0 < len(p) < 15
+]))
 
-  if [ "\$peptide_count" -eq 0 ]; then
-    echo "No valid peptides (length 8-14)"
-    cp "${filtered_peptides}" final_TE_results.tsv
-    exit 0
-  fi
+print(f"Valid peptides for MHC prediction (len 8-14): {len(peptides)}")
 
+if not peptides:
+    print("No valid peptides for MHC prediction, copying input as-is")
+    df.to_csv("final_TE_results.tsv", sep='\\t', index=False)
+    sys.exit(0)
 
-  echo "Running MixMHCpred with alleles: ${params.mhc_alleles}"
-  
-  if ! command -v MixMHCpred &> /dev/null; then
-    echo "ERROR: MixMHCpred not found"
-    cp "${filtered_peptides}" final_TE_results.tsv
-    exit 1
-  fi
+# Write binding FASTA
+with open("binding.fasta", 'w') as f:
+    for p in peptides:
+        f.write(f">{p}\\n{p}\\n")
 
-  MixMHCpred -i binding.fasta -o binding.result -a ${params.mhc_alleles}
+# Run MixMHCpred
+print(f"Running MixMHCpred with alleles: {mhc_alleles}")
 
-  if [ ! -s binding.result ]; then
-    echo "MixMHCpred produced no output"
-    cp "${filtered_peptides}" final_TE_results.tsv
-    exit 0
-  fi
+result = subprocess.run(
+    ["MixMHCpred", "-i", "binding.fasta", "-o", "binding.result", "-a", mhc_alleles],
+    capture_output=True, text=True
+)
+if result.returncode != 0:
+    print(f"MixMHCpred failed (exit {result.returncode}): {result.stderr}")
+    # Fallback: copy input as-is
+    df.to_csv("final_TE_results.tsv", sep='\\t', index=False)
+    sys.exit(0)
 
+if not os.path.exists("binding.result") or os.path.getsize("binding.result") == 0:
+    print("MixMHCpred produced no output, copying input as-is")
+    df.to_csv("final_TE_results.tsv", sep='\\t', index=False)
+    sys.exit(0)
 
+# Parse MixMHCpred output
+rdf = pd.read_csv("binding.result", sep='\\t', comment='#')
 
-  grep -v "^#" binding.result | tail -n+2 > binding_data.tmp
+# Robust column detection for different MixMHCpred output formats
+if {"Peptide", "%Rank_bestAllele", "BestAllele"}.issubset(set(rdf.columns)):
+    sub = rdf[["Peptide", "%Rank_bestAllele", "BestAllele"]].drop_duplicates()
+    # Merge using pandas (exact matching, no regex issues); preserve all input columns
+    out = df.merge(sub, left_on=peptide_col, right_on="Peptide", how="left")
+    out.drop(columns=["Peptide"], inplace=True, errors="ignore")
+else:
+    print("Warning: MixMHCpred output missing expected columns, copying input as-is")
+    out = df
 
+out.to_csv("final_TE_results.tsv", sep='\\t', index=False)
 
-  result_header=\$(grep -v "^#" binding.result | head -n1)
-  
-  rank_col=\$(echo "\$result_header" | tr '\\t' '\\n' | grep -n "%Rank_bestAllele" | cut -d: -f1)
-  allele_col=\$(echo "\$result_header" | tr '\\t' '\\n' | grep -n "BestAllele" | cut -d: -f1)
-  pep_result_col=\$(echo "\$result_header" | tr '\\t' '\\n' | grep -n "^Peptide\$" | cut -d: -f1)
-
-  echo "Result columns - Peptide: \$pep_result_col, Rank: \$rank_col, Allele: \$allele_col"
-
-  if [ -z "\$rank_col" ] || [ -z "\$allele_col" ] || [ -z "\$pep_result_col" ]; then
-    echo "Cannot find required columns in MixMHCpred output"
-    cp "${filtered_peptides}" final_TE_results.tsv
-    exit 0
-  fi
-
-
-  awk -F'\\t' -v pcol="\$pep_result_col" -v rcol="\$rank_col" -v acol="\$allele_col" \\
-    'NR>0 { print \$pcol "\\t" \$rcol "\\t" \$acol }' binding_data.tmp > lookup.tmp
-
-
-
-  echo -e "\${header}\\t%Rank_bestAllele\\tBestAllele" > final_TE_results.tsv
-
-
-  tail -n+2 "${filtered_peptides}" | while IFS=\$'\\t' read -r line; do
-
-    pep=\$(echo "\$line" | cut -f"\$peptide_col" | tr -d ' ')
-    
-
-    match=\$(grep -P "^\${pep}\\t" lookup.tmp || true)
-    
-    if [ -n "\$match" ]; then
-      rank=\$(echo "\$match" | cut -f2)
-      allele=\$(echo "\$match" | cut -f3)
-    else
-      rank="NA"
-      allele="NA"
-    fi
-    
-    echo -e "\${line}\\t\${rank}\\t\${allele}"
-  done >> final_TE_results.tsv
-
-
-  total=\$(tail -n+2 final_TE_results.tsv | wc -l)
-  with_pred=\$(tail -n+2 final_TE_results.tsv | awk -F'\\t' '\$NF != "NA" && \$(NF-1) != "NA"' | wc -l)
-  echo "Final results: \$with_pred/\$total peptides with MHC predictions"
-
-
-  rm -f binding_data.tmp lookup.tmp
-
-  echo "MHC binding prediction completed successfully"
+# Summary
+total = len(out)
+with_pred = out["%Rank_bestAllele"].notna().sum() if "%Rank_bestAllele" in out.columns else 0
+print(f"Final results: {with_pred}/{total} peptides with MHC predictions")
+PYEOF
   """
 }

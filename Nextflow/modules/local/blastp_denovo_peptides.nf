@@ -20,7 +20,7 @@ process BLASTP_DENOVO_PEPTIDES {
   CHILD_DIR="${basename}_Child_fasta"
   mkdir -p "\${CHILD_DIR}"
 
-  DB_PREFIX=\$(ls ${blastdb_dir}/*.pin 2>/dev/null | head -1 | sed 's/\\.pin\$//')
+  DB_PREFIX=\$(ls ${blastdb_dir}/*.pin 2>/dev/null | head -1 | sed 's/\\.[0-9][0-9]\\.pin\$//; s/\\.pin\$//')
   
   if [ -z "\${DB_PREFIX}" ]; then
     echo "ERROR: No BLAST database found in ${blastdb_dir}"
@@ -106,29 +106,20 @@ def run_blastp(fasta_file, db_path):
         return None
 
 def I_L_identity(q_seq, t_seq):
+    #Legacy I/L identity logic matching CLI denovo_te.py.
     if q_seq == t_seq:
         return True
-    
-    if len(q_seq) != len(t_seq):
-        return False
-    
-    CHAR_I = chr(73)
-    CHAR_L = chr(76)
-    IL_SET = set([CHAR_I, CHAR_L])
-    
+
     diff_list = []
-    for idx in range(len(q_seq)):
-        if q_seq[idx] != t_seq[idx]:
-            if set([q_seq[idx], t_seq[idx]]) == IL_SET:
-                diff_list.append(t_seq[idx])
-            else:
-                return False
-    
+    for i in range(len(q_seq)):
+        if q_seq[i] != t_seq[i] and set([q_seq[i], t_seq[i]]) == set(["I", "L"]):
+            diff_list.append(t_seq[i])
+
     diff_list = list(set(diff_list))
     if not diff_list:
         return False
-    
-    return "".join(sorted(diff_list)) in (CHAR_I + CHAR_L)
+
+    return "".join(sorted(diff_list)) in "IL"
 
 
 def filter_and_process_results(input_file, output_file, final_output):
@@ -240,6 +231,7 @@ def main(peptides_fasta, child_dir, num_task, blast_db):
             if os.path.exists(rf):
                 with open(rf, 'r') as infile:
                     outfile.write(infile.read())
+                outfile.write("\\n")
 
     filtered_file = os.path.join(child_dir, "merged_blastp_filter.txt")
     final_file = os.path.join(child_dir, "merged_blastp_TE.csv")
