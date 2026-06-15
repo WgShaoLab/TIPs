@@ -59,7 +59,8 @@ def extract_subsequences_sub(sequence, scores, min_score=0.75, min_length=8):
                             best_avg_score = avg_score
                             best_subseq = temp_subseq
 
-                result.append(best_subseq)
+                if best_subseq:
+                    result.append(best_subseq)
         else:
             i += 1
 

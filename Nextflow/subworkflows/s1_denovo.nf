@@ -25,4 +25,5 @@ workflow S1_DENOVO {
 
   emit:
   peptides = processed.peptides
+  peptide_soft_json = processed.peptide_soft_json
 }
